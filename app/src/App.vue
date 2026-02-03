@@ -76,44 +76,66 @@ async function savePost() {
   postFormSubmitted.value = true;
   if (!postForm.value.title || !postForm.value.body) return;
 
-  if (isEditing.value) {
-    await fetch(
-      `https://mate.academy/students-api/posts/${selectedPost.value.id}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postForm.value),
-      }
-    );
-    Object.assign(selectedPost.value, postForm.value);
-    isEditing.value = false;
-  } else {
-    const r = await fetch(
-      `https://mate.academy/students-api/posts`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...postForm.value,
-          userId: USER_ID,
-        }),
-      }
-    );
-    const newPost = await r.json();
-    posts.value.unshift(newPost);
-    selectedPost.value = newPost;
-    isCreating.value = false;
+  try {
+    if (isEditing.value) {
+      const r = await fetch(
+        `https://mate.academy/students-api/posts/${selectedPost.value.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(postForm.value),
+        }
+      );
+
+      if (!r.ok) throw new Error();
+
+      Object.assign(selectedPost.value, postForm.value);
+      isEditing.value = false;
+    } else {
+      const r = await fetch(
+        `https://mate.academy/students-api/posts`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...postForm.value,
+            userId: USER_ID,
+          }),
+        }
+      );
+
+      if (!r.ok) throw new Error();
+
+      const newPost = await r.json();
+      posts.value.unshift(newPost);
+      selectedPost.value = newPost;
+      isCreating.value = false;
+    }
+  } catch (e) {
+    // Required by task: handle API error
+    // Minimal handling to keep UI consistent
+    alert('Failed to save post. Please try again.');
   }
 }
 
+
 async function deletePost() {
-  await fetch(
-    `https://mate.academy/students-api/posts/${selectedPost.value.id}`,
-    { method: 'DELETE' }
-  );
-  posts.value = posts.value.filter(p => p !== selectedPost.value);
-  selectedPost.value = null;
+  try {
+    const r = await fetch(
+      `https://mate.academy/students-api/posts/${selectedPost.value.id}`,
+      { method: 'DELETE' }
+    );
+
+    if (!r.ok) throw new Error();
+
+    posts.value = posts.value.filter(p => p !== selectedPost.value);
+    selectedPost.value = null;
+  } catch (e) {
+    // Required by task: handle delete error
+    alert('Failed to delete post. Please try again.');
+  }
 }
+
 
 function startEdit() {
   postForm.value = {
